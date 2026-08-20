@@ -16,7 +16,7 @@ $StopFile = Join-Path $RuntimeDir 'stop.requested'
 $UrlFile = Join-Path $RuntimeDir 'last-url.txt'
 $LogFile = Join-Path $RuntimeDir 'launcher.log'
 $VenvPython = Join-Path $Root '.venv\Scripts\python.exe'
-$Processes = @()
+$Processes = [System.Collections.Generic.List[object]]::new()
 $OwnsPidFile = $false
 $FrontendUrl = $null
 $BackendUrl = $null
@@ -145,12 +145,12 @@ function Start-ServiceProcess(
     $process = [System.Diagnostics.Process]::new()
     $process.StartInfo = $info
     if (-not $process.Start()) { throw "无法启动 $Name。" }
-    $script:Processes += [pscustomobject]@{
+    $script:Processes.Add([pscustomobject]@{
         Name = $Name
         Process = $process
         Pid = $process.Id
-        StartedAt = $process.StartTime.ToUniversalTime().ToString('o')
-    }
+        StartedAt = [DateTime]::UtcNow.ToString('o')
+    })
     Write-Ok "$Name 已启动，PID $($process.Id)"
 }
 
