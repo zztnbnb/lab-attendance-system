@@ -8,4 +8,11 @@ contextBridge.exposeInMainWorld('labtime', {
   close: () => ipcRenderer.send('window:close'),
   isMaximized: () => ipcRenderer.invoke('window:is-maximized'),
   isFullscreen: () => ipcRenderer.invoke('window:is-fullscreen'),
+  checkForUpdates: () => ipcRenderer.invoke('app:check-for-updates'),
+  openUpdate: (url) => ipcRenderer.invoke('app:open-update', url),
+  onUpdateAvailable: (callback) => {
+    const listener = (_event, update) => callback(update)
+    ipcRenderer.on('app:update-available', listener)
+    return () => ipcRenderer.removeListener('app:update-available', listener)
+  },
 })
