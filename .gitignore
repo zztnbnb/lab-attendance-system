@@ -17,6 +17,10 @@ frontend/dist/
 frontend/*.tsbuildinfo
 frontend/.vite/
 frontend/preview.*.log
+node_modules/
+packaging/build/
+packaging/backend/
+release/
 models/*.onnx
 deploy/certs/*.pem
 deploy/certs/*.key

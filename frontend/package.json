@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vue-tsc -b && vite build",
+    "electron:dev": "npm run build && electron ../electron/main.cjs --dev",
+    "electron:build": "npm run build && powershell -ExecutionPolicy Bypass -File ../scripts/build-installer.ps1",
     "typecheck": "vue-tsc -b --pretty false",
     "test": "vitest run",
     "generate:api": "openapi-typescript ../backend/openapi.json -o src/api/schema.d.ts"
@@ -30,6 +32,8 @@
     "typescript": "~5.7.2",
     "vite": "^6.0.7",
     "vitest": "^3.2.4",
-    "vue-tsc": "^2.2.0"
+    "vue-tsc": "^2.2.0",
+    "electron": "^36.4.0",
+    "electron-builder": "^26.0.12"
   }
 }

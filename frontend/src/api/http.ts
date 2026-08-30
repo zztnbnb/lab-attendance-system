@@ -1,6 +1,7 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
 
-export const http = axios.create({ baseURL: '/api/v1', withCredentials: true, timeout: 20_000 })
+const desktopApiBase = typeof window !== 'undefined' ? window.labtime?.apiBase : undefined
+export const http = axios.create({ baseURL: desktopApiBase || '/api/v1', withCredentials: true, timeout: 20_000 })
 let accessToken: string | null = null
 let refreshPromise: Promise<string | null> | null = null
 

@@ -1,0 +1,33 @@
+appId: com.labtime.attendance
+productName: LabTime 实验室打卡系统
+directories:
+  output: release
+files:
+  - electron/**
+  - frontend/dist/**
+  - package.json
+  - '!**/*.map'
+extraResources:
+  - from: packaging/backend
+    to: backend
+    filter:
+      - labtime-api.exe
+  - from: models
+    to: models
+    filter:
+      - '*.onnx'
+      - README.md
+  - from: THIRD_PARTY_NOTICES.md
+    to: THIRD_PARTY_NOTICES.md
+win:
+  target:
+    - nsis
+  artifactName: LabTime-Setup-${version}.exe
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: LabTime 实验室打卡系统
+  deleteAppDataOnUninstall: false
