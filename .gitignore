@@ -18,8 +18,7 @@ frontend/*.tsbuildinfo
 frontend/.vite/
 frontend/preview.*.log
 node_modules/
-packaging/build/
-packaging/backend/
+packaging/
 release/
 models/*.onnx
 deploy/certs/*.pem
