@@ -29,6 +29,13 @@ class AttendanceInvalidate(BaseModel):
     reason: str = Field(min_length=2, max_length=500)
 
 
+class ManualAttendanceCreate(BaseModel):
+    user_id: UUID
+    check_in_at: datetime
+    check_out_at: datetime | None = None
+    reason: str = Field(min_length=2, max_length=500)
+
+
 class DailyDuration(BaseModel):
     date: date
     duration_seconds: int

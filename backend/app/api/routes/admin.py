@@ -26,6 +26,7 @@ from app.schemas.attendance import (
     AttendanceCorrection,
     AttendanceInvalidate,
     AttendancePublic,
+    ManualAttendanceCreate,
 )
 from app.schemas.audit import AuditLogPublic
 from app.schemas.common import Message, Page
@@ -78,6 +79,71 @@ async def list_attendance(
         )
     ).scalars().all()
     return Page(items=[attendance_public(item) for item in sessions], total=total or 0, page=page, page_size=page_size)
+
+
+@router.post("/attendance-sessions/manual", response_model=AttendancePublic, status_code=status.HTTP_201_CREATED)
+async def create_manual_attendance(
+    payload: ManualAttendanceCreate,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create a backfilled attendance session with an auditable administrator reason."""
+    user = await db.get(User, payload.user_id)
+    if user is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "用户不存在")
+    now = utcnow()
+    if payload.check_in_at > now or (payload.check_out_at and payload.check_out_at > now):
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "补签时间不能晚于当前服务器时间")
+    if payload.check_out_at and payload.check_out_at <= payload.check_in_at:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "签退时间必须晚于签到时间")
+    unfinished = await db.scalar(
+        select(AttendanceSession)
+        .where(
+            AttendanceSession.user_id == user.id,
+            AttendanceSession.status.in_([AttendanceStatus.OPEN, AttendanceStatus.MISSING_CHECKOUT]),
+        )
+        .with_for_update()
+    )
+    if unfinished is not None:
+        raise HTTPException(status.HTTP_409_CONFLICT, "该用户存在未完成的考勤记录，请先处理异常")
+    device = await db.scalar(select(KioskDevice).where(KioskDevice.is_active.is_(True)).order_by(KioskDevice.created_at))
+    if device is None:
+        raise HTTPException(status.HTTP_409_CONFLICT, "没有可用的终端，请先启用一个终端")
+    status_value = AttendanceStatus.CLOSED if payload.check_out_at else AttendanceStatus.OPEN
+    attendance = AttendanceSession(
+        user_id=user.id,
+        check_in_at=payload.check_in_at,
+        check_out_at=payload.check_out_at,
+        duration_seconds=int((payload.check_out_at - payload.check_in_at).total_seconds()) if payload.check_out_at else None,
+        status=status_value,
+        check_in_device_id=device.id,
+        check_out_device_id=device.id if payload.check_out_at else None,
+        check_in_score=1.0,
+        check_out_score=1.0 if payload.check_out_at else None,
+        corrected=True,
+        correction_reason=payload.reason,
+        corrected_by_id=admin.id,
+    )
+    db.add(attendance)
+    await db.flush()
+    add_audit(
+        db,
+        action="ATTENDANCE_MANUALLY_CREATED",
+        target_type="attendance_session",
+        target_id=attendance.id,
+        actor_user_id=admin.id,
+        after={
+            "user_id": str(user.id),
+            "check_in_at": payload.check_in_at.isoformat(),
+            "check_out_at": payload.check_out_at.isoformat() if payload.check_out_at else None,
+            "status": status_value.value,
+        },
+        reason=payload.reason,
+    )
+    await db.commit()
+    await db.refresh(attendance)
+    attendance.user = user
+    return attendance_public(attendance)
 
 
 @router.post("/attendance-sessions/{session_id}/correct", response_model=AttendancePublic)

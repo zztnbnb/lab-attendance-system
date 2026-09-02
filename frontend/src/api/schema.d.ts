@@ -21,6 +21,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register */
+        post: operations["register_api_v1_auth_register_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/refresh": {
         parameters: {
             query?: never;
@@ -475,6 +492,26 @@ export interface paths {
         get: operations["list_attendance_api_v1_admin_attendance_sessions_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/attendance-sessions/manual": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Manual Attendance
+         * @description Create a backfilled attendance session with an auditable administrator reason.
+         */
+        post: operations["create_manual_attendance_api_v1_admin_attendance_sessions_manual_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1104,6 +1141,23 @@ export interface components {
             /** Password */
             password: string;
         };
+        /** ManualAttendanceCreate */
+        ManualAttendanceCreate: {
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+            /**
+             * Check In At
+             * Format: date-time
+             */
+            check_in_at: string;
+            /** Check Out At */
+            check_out_at?: string | null;
+            /** Reason */
+            reason: string;
+        };
         /** Message */
         Message: {
             /** Message */
@@ -1171,12 +1225,21 @@ export interface components {
             username: string;
             /** Duration Seconds */
             duration_seconds: number;
-            /** Checkin Count */
-            checkin_count?: number;
-            /** Checkout Count */
-            checkout_count?: number;
-            /** Is Active */
-            is_active?: boolean;
+            /**
+             * Checkin Count
+             * @default 0
+             */
+            checkin_count: number;
+            /**
+             * Checkout Count
+             * @default 0
+             */
+            checkout_count: number;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
         };
         /** RecognitionSessionPublic */
         RecognitionSessionPublic: {
@@ -1219,6 +1282,18 @@ export interface components {
             processing_ms?: number | null;
             /** Processed At */
             processed_at?: string | null;
+        };
+        /**
+         * RegisterRequest
+         * @description Self-registration for lab members. The student ID is the login name.
+         */
+        RegisterRequest: {
+            /** Student Id */
+            student_id: string;
+            /** Real Name */
+            real_name: string;
+            /** Password */
+            password: string;
         };
         /** RejectFaceRequest */
         RejectFaceRequest: {
@@ -1342,6 +1417,39 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    register_api_v1_auth_register_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2253,6 +2361,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Page_AttendancePublic_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_manual_attendance_api_v1_admin_attendance_sessions_manual_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManualAttendanceCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttendancePublic"];
                 };
             };
             /** @description Validation Error */

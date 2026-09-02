@@ -46,6 +46,47 @@
         }
       }
     },
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": [
+          "认证"
+        ],
+        "summary": "Register",
+        "operationId": "register_api_v1_auth_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/auth/refresh": {
       "post": {
         "tags": [
@@ -1660,6 +1701,53 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/admin/attendance-sessions/manual": {
+      "post": {
+        "tags": [
+          "管理员"
+        ],
+        "summary": "Create Manual Attendance",
+        "description": "Create a backfilled attendance session with an auditable administrator reason.",
+        "operationId": "create_manual_attendance_api_v1_admin_attendance_sessions_manual_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManualAttendanceCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttendancePublic"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/admin/attendance-sessions/{session_id}/correct": {
@@ -3396,6 +3484,45 @@
         ],
         "title": "LoginRequest"
       },
+      "ManualAttendanceCreate": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "User Id"
+          },
+          "check_in_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Check In At"
+          },
+          "check_out_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Check Out At"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 2,
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "check_in_at",
+          "reason"
+        ],
+        "title": "ManualAttendanceCreate"
+      },
       "Message": {
         "properties": {
           "message": {
@@ -3578,6 +3705,21 @@
           "duration_seconds": {
             "type": "integer",
             "title": "Duration Seconds"
+          },
+          "checkin_count": {
+            "type": "integer",
+            "title": "Checkin Count",
+            "default": 0
+          },
+          "checkout_count": {
+            "type": "integer",
+            "title": "Checkout Count",
+            "default": 0
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
           }
         },
         "type": "object",
@@ -3739,6 +3881,37 @@
           "message"
         ],
         "title": "RecognitionVerifyResponse"
+      },
+      "RegisterRequest": {
+        "properties": {
+          "student_id": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 5,
+            "pattern": "^\\d{5,20}$",
+            "title": "Student Id"
+          },
+          "real_name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Real Name"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 10,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "student_id",
+          "real_name",
+          "password"
+        ],
+        "title": "RegisterRequest",
+        "description": "Self-registration for lab members. The student ID is the login name."
       },
       "RejectFaceRequest": {
         "properties": {
