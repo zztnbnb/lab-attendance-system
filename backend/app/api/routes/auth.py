@@ -4,7 +4,7 @@ from datetime import timedelta
 from uuid import uuid4
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
-from sqlalchemy import select, update
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_user
@@ -18,8 +18,8 @@ from app.core.security import (
     verify_password,
 )
 from app.db.session import get_db
-from app.models.entities import AuthSession, User
-from app.schemas.auth import ChangePasswordRequest, LoginRequest, TokenResponse, UserPublic
+from app.models.entities import AuthSession, Role, User
+from app.schemas.auth import ChangePasswordRequest, LoginRequest, RegisterRequest, TokenResponse, UserPublic
 from app.schemas.common import Message
 from app.services.audit import add_audit
 
@@ -66,6 +66,32 @@ async def login(payload: LoginRequest, response: Response, db: AsyncSession = De
     if not user.is_active:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "账号已停用")
     add_audit(db, action="AUTH_LOGIN", target_type="user", target_id=user.id, actor_user_id=user.id)
+    return await issue_tokens(db, user, response)
+
+
+@router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+async def register(payload: RegisterRequest, response: Response, db: AsyncSession = Depends(get_db)):
+    student_id = payload.student_id.strip()
+    exists = await db.scalar(
+        select(func.count()).select_from(User).where(
+            or_(User.username == student_id, User.identifier == student_id)
+        )
+    )
+    if exists:
+        raise HTTPException(status.HTTP_409_CONFLICT, "该学号已经注册，请直接登录或联系管理员")
+    user = User(
+        username=student_id,
+        identifier=student_id,
+        real_name=payload.real_name.strip(),
+        password_hash=hash_password(payload.password),
+        role=Role.USER,
+        is_active=True,
+    )
+    db.add(user)
+    await db.flush()
+    add_audit(db, action="AUTH_REGISTERED", target_type="user", target_id=user.id, actor_user_id=user.id, after={"username": student_id})
+    await db.commit()
+    await db.refresh(user)
     return await issue_tokens(db, user, response)
 
 

@@ -35,7 +35,7 @@ const device = ref<KioskDevice | null>(null)
 const dashboard = ref<KioskDashboard | null>(null)
 const presence = ref<KioskPresencePage | null>(null)
 const records = ref<KioskRecordPage | null>(null)
-const message = ref('请站在取景框内，正对摄像头后开始扫描')
+const message = ref('请站在取景框内，系统将自动扫描')
 const submitting = ref(false)
 const cameraBusy = ref(false)
 const cameraReady = ref(false)
@@ -51,7 +51,9 @@ const serverOffsetMs = ref(0)
 let clockTimer: number | undefined
 let refreshTimer: number | undefined
 let resetTimer: number | undefined
+let autoScanTimer: number | undefined
 let scanRunId = 0
+const autoScanEnabled = ref(true)
 
 const code = localStorage.getItem('lab_device_code') ?? ''
 const secret = localStorage.getItem('lab_device_secret') ?? ''
@@ -95,7 +97,7 @@ function resetResult() {
   frameBytes.value = 0
   clientRecognitionMs.value = null
   errorKind.value = undefined
-  message.value = '请站在取景框内，正对摄像头后开始扫描'
+  message.value = autoScanEnabled.value ? '请站在取景框内，系统将自动扫描' : '请站在取景框内，正对摄像头后开始扫描'
 }
 
 function scheduleReset() {
@@ -152,12 +154,21 @@ async function initialize() {
     await refreshDevices()
     await start()
     cameraReady.value = true
+    startAutoScan()
   } catch (err) {
     cameraReady.value = false
     stage.value = 'error'
     errorKind.value = 'camera'
     message.value = errorMessage(err, '无法访问摄像头，请检查权限或 HTTPS 配置')
   }
+}
+
+function startAutoScan() {
+  window.clearInterval(autoScanTimer)
+  if (!autoScanEnabled.value) return
+  autoScanTimer = window.setInterval(() => {
+    if (stage.value === 'ready' && cameraReady.value && !cameraBusy.value) recognize()
+  }, 3000)
 }
 
 async function restartCamera() {
@@ -169,7 +180,8 @@ async function restartCamera() {
   try {
     await start(activeDeviceId.value)
     cameraReady.value = true
-    message.value = '摄像头已就绪，可以开始静态扫描'
+    message.value = autoScanEnabled.value ? '摄像头已就绪，请站在取景框内，系统将自动扫描' : '摄像头已就绪，可以开始静态扫描'
+    startAutoScan()
     if (stage.value === 'error') stage.value = 'ready'
     errorKind.value = undefined
     ElMessage.success('摄像头检测成功')
@@ -233,6 +245,7 @@ async function recognize() {
       errorKind.value = 'recognition'
       message.value = result.value.message
       await refreshTerminalData()
+      if (autoScanEnabled.value) window.setTimeout(resetResult, 2500)
       return
     }
     actionIdempotencyKey.value = crypto.randomUUID()
@@ -250,6 +263,7 @@ async function recognize() {
     stage.value = 'error'
     errorKind.value = 'recognition'
     message.value = errorMessage(err, '识别失败，请重新尝试')
+    if (autoScanEnabled.value) window.setTimeout(resetResult, 2500)
   }
 }
 
@@ -298,6 +312,7 @@ onBeforeUnmount(() => {
   window.clearInterval(clockTimer)
   window.clearInterval(refreshTimer)
   window.clearInterval(resetTimer)
+  window.clearInterval(autoScanTimer)
   stop()
 })
 </script>

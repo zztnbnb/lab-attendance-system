@@ -12,6 +12,13 @@ class LoginRequest(BaseModel):
     password: str = Field(min_length=8, max_length=128)
 
 
+class RegisterRequest(BaseModel):
+    """Self-registration for lab members. The student ID is the login name."""
+    student_id: str = Field(pattern=r"^\d{5,20}$", min_length=5, max_length=20)
+    real_name: str = Field(min_length=1, max_length=100)
+    password: str = Field(min_length=10, max_length=128)
+
+
 class UserPublic(ORMModel):
     id: UUID
     username: str

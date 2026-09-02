@@ -19,6 +19,15 @@ export const useAuthStore = defineStore('auth', {
         this.initialized = true
       } finally { this.loading = false }
     },
+    async register(studentId: string, realName: string, password: string) {
+      this.loading = true
+      try {
+        const { data } = await http.post('/auth/register', { student_id: studentId, real_name: realName, password })
+        setAccessToken(data.access_token)
+        this.user = data.user
+        this.initialized = true
+      } finally { this.loading = false }
+    },
     async initialize() {
       if (this.initialized) return
       try {

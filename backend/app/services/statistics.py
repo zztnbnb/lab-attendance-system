@@ -117,15 +117,20 @@ async def admin_statistics(db: AsyncSession, days: int = 14) -> AdminStatistics:
 
     totals: dict[date, int] = defaultdict(int)
     user_totals: dict[UUID, int] = defaultdict(int)
+    user_checkins: dict[UUID, int] = defaultdict(int)
+    user_checkouts: dict[UUID, int] = defaultdict(int)
     hourly = Counter()
     current = []
     today_checkins = 0
     today_checkouts = 0
     exceptions = 0
     users: dict[UUID, User] = {}
+    all_users = (await db.execute(select(User).order_by(User.real_name))).scalars().all()
+    users.update({user.id: user for user in all_users})
 
     for session in sessions:
         users[session.user_id] = session.user
+        user_checkins[session.user_id] += 1
         if session.status == AttendanceStatus.OPEN:
             current.append(
                 CurrentUserItem(
@@ -142,13 +147,15 @@ async def admin_statistics(db: AsyncSession, days: int = 14) -> AdminStatistics:
             hourly[session.check_in_at.astimezone(LOCAL_TZ).hour] += 1
         if session.check_out_at and today_start <= session.check_out_at < today_end:
             today_checkouts += 1
+        if session.check_out_at:
+            user_checkouts[session.user_id] += 1
         if session.status == AttendanceStatus.CLOSED and session.check_out_at:
             for day, seconds in split_duration_by_local_day(session.check_in_at, session.check_out_at).items():
                 if range_start.date() <= day <= local_today:
                     totals[day] += seconds
                     user_totals[session.user_id] += seconds
 
-    ranking = sorted(user_totals.items(), key=lambda item: item[1], reverse=True)[:10]
+    ranking = sorted(users.items(), key=lambda item: (-user_totals.get(item[0], 0), item[1].real_name))
     return AdminStatistics(
         current_count=len(current),
         current_users=sorted(current, key=lambda item: item.check_in_at),
@@ -164,9 +171,12 @@ async def admin_statistics(db: AsyncSession, days: int = 14) -> AdminStatistics:
                 user_id=user_id,
                 real_name=users[user_id].real_name,
                 username=users[user_id].username,
-                duration_seconds=seconds,
+                duration_seconds=user_totals.get(user_id, 0),
+                checkin_count=user_checkins.get(user_id, 0),
+                checkout_count=user_checkouts.get(user_id, 0),
+                is_active=users[user_id].is_active,
             )
-            for user_id, seconds in ranking
+            for user_id, _user in ranking
         ],
         hourly=[HourlyCount(hour=hour, count=hourly.get(hour, 0)) for hour in range(24)],
     )

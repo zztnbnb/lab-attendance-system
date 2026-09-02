@@ -49,6 +49,9 @@ class RankingItem(BaseModel):
     real_name: str
     username: str
     duration_seconds: int
+    checkin_count: int = 0
+    checkout_count: int = 0
+    is_active: bool = True
 
 
 class HourlyCount(BaseModel):

@@ -9,15 +9,24 @@ import { errorMessage } from '@/api/http'
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
-const form = reactive({ username: '', password: '' })
+const form = reactive({ username: '', realName: '', password: '', confirm: '' })
 const error = ref('')
+const mode = ref<'login' | 'register'>('login')
 
 async function submit() {
   error.value = ''
   try {
-    await auth.login(form.username.trim(), form.password)
-    ElMessage.success(`欢迎回来，${auth.user?.real_name}`)
-    const fallback = auth.isAdmin ? '/admin/dashboard' : '/dashboard'
+    if (mode.value === 'register') {
+      if (!/^\d{5,20}$/.test(form.username.trim())) throw new Error('学号必须为 5–20 位数字')
+      if (!form.realName.trim()) throw new Error('请输入真实姓名')
+      if (form.password.length < 10) throw new Error('密码至少需要 10 位')
+      if (form.password !== form.confirm) throw new Error('两次输入的密码不一致')
+      await auth.register(form.username.trim(), form.realName.trim(), form.password)
+    } else {
+      await auth.login(form.username.trim(), form.password)
+    }
+    ElMessage.success(mode.value === 'register' ? '注册成功，请先录入人脸' : `欢迎回来，${auth.user?.real_name}`)
+    const fallback = mode.value === 'register' ? '/face' : (auth.isAdmin ? '/admin/dashboard' : '/dashboard')
     await router.replace(typeof route.query.redirect === 'string' ? route.query.redirect : fallback)
   } catch (err) { error.value = errorMessage(err, '无法连接后端，请确认“一键启动”窗口保持开启') }
 }
@@ -41,17 +50,20 @@ async function submit() {
     </section>
     <section class="login-form-wrap">
       <el-form class="login-form" size="large" @submit.prevent="submit">
-        <div class="login-form__head"><h2>登录系统</h2><p>使用管理员分配的账号继续</p></div>
+        <div class="login-form__head"><h2>{{ mode === 'login' ? '登录系统' : '注册实验室账号' }}</h2><p>{{ mode === 'login' ? '使用学号或管理员分配的账号继续' : '使用学号作为账号，并设置自己的密码' }}</p></div>
         <el-alert v-if="error" :title="error" type="error" :closable="false" show-icon />
-        <el-form-item label="账号">
-          <el-input v-model="form.username" :prefix-icon="User" autocomplete="username" placeholder="用户名" />
+        <el-form-item :label="mode === 'login' ? '账号 / 学号' : '学号'">
+          <el-input v-model="form.username" :prefix-icon="User" autocomplete="username" placeholder="请输入学号" />
         </el-form-item>
+        <el-form-item v-if="mode === 'register'" label="真实姓名"><el-input v-model="form.realName" autocomplete="name" placeholder="请输入真实姓名" /></el-form-item>
         <el-form-item label="密码">
           <el-input v-model="form.password" :prefix-icon="Lock" type="password" show-password autocomplete="current-password" placeholder="登录密码" @keyup.enter="submit" />
         </el-form-item>
-        <el-button native-type="submit" type="primary" :loading="auth.loading" class="login-button">登录</el-button>
+        <el-form-item v-if="mode === 'register'" label="确认密码"><el-input v-model="form.confirm" :prefix-icon="Lock" type="password" show-password autocomplete="new-password" placeholder="再次输入密码" @keyup.enter="submit" /></el-form-item>
+        <el-button native-type="submit" type="primary" :loading="auth.loading" class="login-button">{{ mode === 'login' ? '登录' : '注册并继续' }}</el-button>
+        <button type="button" class="mode-switch" @click="mode = mode === 'login' ? 'register' : 'login'; error = ''">{{ mode === 'login' ? '首次使用？用学号注册' : '已有账号？返回登录' }}</button>
         <router-link to="/kiosk" class="login-kiosk-link">这是打卡电脑？进入人脸识别终端 →</router-link>
-        <p class="privacy-note">人脸仅用于现场打卡，不作为本页面的登录凭证。</p>
+        <p class="privacy-note">注册后请进入“人脸录入”完成采集；管理员激活后即可在终端打卡。</p>
       </el-form>
     </section>
   </main>
@@ -83,6 +95,7 @@ async function submit() {
 .login-form :deep(.el-input__wrapper) { height: 48px; border-radius: 10px; box-shadow: 0 0 0 1px #e2e1f1 inset; }
 .login-button { width: 100%; height: 48px; margin-top: 10px; border-color: transparent; border-radius: 10px; background: linear-gradient(135deg, #5b7cff, #8b68ee 52%, #f15ca8); box-shadow: 0 10px 24px rgba(102, 94, 220, .22); font-weight: 700; }
 .login-kiosk-link { display: block; margin-top: 24px; color: #616cf1; text-align: center; font-size: 13px; }
+.mode-switch { display: block; width: 100%; margin-top: 16px; border: 0; color: #626cf0; background: transparent; cursor: pointer; font-size: 13px; }
 .privacy-note { margin-top: 34px; color: #9a9bb2; text-align: center; font-size: 11px; }
 @media (max-width: 860px) { .login-page { display: block; } .login-story { min-height: 250px; padding: 28px; } .login-story__content { margin: 42px 0; } .login-story h1 { font-size: 34px; } .login-story__content > p, .story-points, .login-story__foot { display: none; } .login-form-wrap { min-height: calc(100vh - 250px); padding: 34px 22px; } }
 </style>

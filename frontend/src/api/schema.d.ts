@@ -1171,6 +1171,12 @@ export interface components {
             username: string;
             /** Duration Seconds */
             duration_seconds: number;
+            /** Checkin Count */
+            checkin_count?: number;
+            /** Checkout Count */
+            checkout_count?: number;
+            /** Is Active */
+            is_active?: boolean;
         };
         /** RecognitionSessionPublic */
         RecognitionSessionPublic: {
