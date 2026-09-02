@@ -13,7 +13,9 @@
     <button type="button" @click="downloadUpdate">查看并下载</button>
     <button class="dismiss" type="button" title="关闭提醒" @click="update = null">×</button>
   </div>
-  <router-view />
+  <div class="route-viewport" :class="{ 'has-desktop-bar': desktop }">
+    <router-view />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -37,7 +39,7 @@ onMounted(async () => {
 onBeforeUnmount(() => removeUpdateListener?.())
 </script>
 
-<style scoped>
+<style>
 .desktop-bar { position: fixed; z-index: 3000; inset: 0 0 auto; height: 34px; display: flex; align-items: center; justify-content: space-between; padding-left: 14px; color: #dce8ff; background: rgba(8, 17, 45, .94); -webkit-app-region: drag; }
 .desktop-title { font-size: 12px; opacity: .85; }
 .desktop-actions { height: 100%; display: flex; -webkit-app-region: no-drag; }
@@ -47,4 +49,11 @@ onBeforeUnmount(() => removeUpdateListener?.())
 .update-banner { position: fixed; z-index: 2999; top: 42px; right: 18px; display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 16px; color: #fff; background: linear-gradient(110deg, #2d5bce, #d64d9b); border: 1px solid rgba(255,255,255,.3); border-radius: 10px; box-shadow: 0 12px 32px rgba(3, 8, 28, .35); font-size: 13px; }
 .update-banner button { border: 0; border-radius: 6px; padding: 6px 10px; color: #25123e; background: #fff; cursor: pointer; font-weight: 600; }
 .update-banner .dismiss { padding: 2px 6px; color: #fff; background: transparent; font-size: 18px; font-weight: 400; }
+.route-viewport { min-height: 100vh; }
+.route-viewport.has-desktop-bar { min-height: calc(100vh - 34px); margin-top: 34px; }
+.route-viewport.has-desktop-bar > .app-shell { min-height: calc(100vh - 34px); }
+.route-viewport.has-desktop-bar > .app-shell .sidebar { height: calc(100vh - 34px); }
+.route-viewport.has-desktop-bar > .kiosk-page,
+.route-viewport.has-desktop-bar > .setup-page,
+.route-viewport.has-desktop-bar > .login-page { min-height: calc(100vh - 34px); }
 </style>
