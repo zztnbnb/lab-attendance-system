@@ -131,13 +131,13 @@ def test_admin_user_device_enrollment_and_attendance_flow(client: TestClient, ad
     assert statistics.json()["current_count"] == 0
 
 
-def test_self_enrollment_can_be_live_verified(client: TestClient, admin_headers: dict):
+def test_self_enrollment_activates_on_submit(client: TestClient, admin_headers: dict):
     created = client.post(
         "/api/v1/admin/users",
         headers=admin_headers,
         json={
             "username": "bob",
-            "real_name": "待复验用户",
+            "real_name": "自助激活用户",
             "identifier": "LAB-002",
             "password": "BobSecure123!",
             "role": "USER",
@@ -168,13 +168,10 @@ def test_self_enrollment_can_be_live_verified(client: TestClient, admin_headers:
         headers=user_headers,
     )
     assert submitted.status_code == 200, submitted.text
-    assert submitted.json()["status"] == "PENDING"
+    assert submitted.json()["status"] == "ACTIVE"
 
-    verified = client.post(
-        f"/api/v1/admin/face-profiles/{submitted.json()['id']}/live-verify",
-        headers=admin_headers,
-        files=frames,
-    )
-    assert verified.status_code == 200, verified.text
-    assert verified.json()["verified"] is True
-    assert verified.json()["score"] >= verified.json()["threshold"]
+    # The newly activated profile is immediately available for recognition.
+    profiles = client.get("/api/v1/admin/face-profiles", headers=admin_headers)
+    assert profiles.status_code == 200, profiles.text
+    activated = next(item for item in profiles.json()["items"] if item["id"] == submitted.json()["id"])
+    assert activated["status"] == "ACTIVE"

@@ -63,7 +63,7 @@ async function submit() {
         <el-button native-type="submit" type="primary" :loading="auth.loading" class="login-button">{{ mode === 'login' ? '登录' : '注册并继续' }}</el-button>
         <button type="button" class="mode-switch" @click="mode = mode === 'login' ? 'register' : 'login'; error = ''">{{ mode === 'login' ? '首次使用？用学号注册' : '已有账号？返回登录' }}</button>
         <router-link to="/kiosk" class="login-kiosk-link">这是打卡电脑？进入人脸识别终端 →</router-link>
-        <p class="privacy-note">注册后请进入“人脸录入”完成采集；管理员激活后即可在终端打卡。</p>
+        <p class="privacy-note">注册后请进入“人脸录入”完成采集；提交成功后即可在终端打卡。</p>
       </el-form>
     </section>
   </main>

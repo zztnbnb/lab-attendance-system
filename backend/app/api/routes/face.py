@@ -218,22 +218,19 @@ async def submit_enrollment(
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "活体分数不足，请重新录入")
     now = utcnow()
     profile.submitted_at = now
-    enrollment.status = EnrollmentStatus.SUBMITTED
-    if profile.mode == EnrollmentMode.ADMIN:
-        await db.execute(
-            update(FaceProfile)
-            .where(FaceProfile.user_id == profile.user_id, FaceProfile.status == FaceProfileStatus.ACTIVE)
-            .values(status=FaceProfileStatus.REPLACED, reviewed_at=now)
-        )
-        profile.status = FaceProfileStatus.ACTIVE
-        profile.approved_by_id = user.id
-        profile.reviewed_at = now
-        profile.live_verified_at = now
-        enrollment.status = EnrollmentStatus.COMPLETED
-        action = "FACE_PROFILE_ADMIN_ACTIVATED"
-    else:
-        profile.status = FaceProfileStatus.PENDING
-        action = "FACE_PROFILE_SUBMITTED"
+    # A successful user submission is sufficient for activation. Replace the
+    # previous active profile only after all new frames have passed validation,
+    # so a failed or incomplete enrollment never interrupts existing access.
+    await db.execute(
+        update(FaceProfile)
+        .where(FaceProfile.user_id == profile.user_id, FaceProfile.status == FaceProfileStatus.ACTIVE)
+        .values(status=FaceProfileStatus.REPLACED, reviewed_at=now)
+    )
+    profile.status = FaceProfileStatus.ACTIVE
+    profile.reviewed_at = now
+    profile.live_verified_at = now
+    enrollment.status = EnrollmentStatus.COMPLETED
+    action = "FACE_PROFILE_ADMIN_ACTIVATED" if profile.mode == EnrollmentMode.ADMIN else "FACE_PROFILE_SELF_ACTIVATED"
     add_audit(
         db,
         action=action,

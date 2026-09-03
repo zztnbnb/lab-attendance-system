@@ -52,7 +52,7 @@ async function submit() {
   try {
     await http.post(`/face/enrollment-sessions/${enrollmentId.value}/submit`)
     enrollmentId.value = null; templateCount.value = 0; stop(); cameraReady.value = false
-    ElMessage.success('已提交，管理员现场复验后生效')
+    ElMessage.success('人脸已提交并激活，现在可以使用人脸打卡')
     await load()
   } catch (err) { ElMessage.error(errorMessage(err, '提交失败')) }
   finally { busy.value = false }
@@ -61,7 +61,7 @@ onMounted(load)
 </script>
 
 <template>
-  <PageHeader title="人脸录入" description="自助录入会生成待审批档案；激活前需由管理员现场复验。静态保持正面即可完成采集。" />
+  <PageHeader title="人脸录入" description="采集通过后提交即自动激活；静态保持正面即可完成采集。" />
   <div class="enrollment-grid">
     <section class="panel">
       <div class="panel__header"><h2>现场采集</h2><span class="secure-label">画面不保存</span></div>
@@ -76,10 +76,10 @@ onMounted(load)
           <el-button v-if="!enrollmentId" type="primary" :loading="busy" :icon="Camera" @click="begin">开始新录入</el-button>
           <template v-else>
             <el-button type="primary" :loading="busy" :icon="Camera" @click="capture">采集 5 帧</el-button>
-            <el-button :disabled="templateCount < 3" :icon="CircleCheck" @click="submit">提交审批</el-button>
+            <el-button :disabled="templateCount < 3" :icon="CircleCheck" @click="submit">提交并激活</el-button>
           </template>
         </div>
-        <ul class="capture-rules"><li>光线均匀，摘下口罩、帽子和深色眼镜</li><li>画面中只能出现一张人脸</li><li>保持正面静止，脸部位于取景框中央</li><li>提交后请与管理员约定现场复验</li></ul>
+        <ul class="capture-rules"><li>光线均匀，摘下口罩、帽子和深色眼镜</li><li>画面中只能出现一张人脸</li><li>保持正面静止，脸部位于取景框中央</li><li>提交成功后立即激活，可直接前往打卡</li></ul>
       </div>
     </section>
     <section class="panel">
