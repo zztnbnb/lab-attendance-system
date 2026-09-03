@@ -61,7 +61,7 @@ onMounted(load)
 </script>
 
 <template>
-  <PageHeader title="人脸录入" description="自助录入会生成待审批档案；激活前需由管理员现场复验。" />
+  <PageHeader title="人脸录入" description="自助录入会生成待审批档案；激活前需由管理员现场复验。静态保持正面即可完成采集。" />
   <div class="enrollment-grid">
     <section class="panel">
       <div class="panel__header"><h2>现场采集</h2><span class="secure-label">画面不保存</span></div>
@@ -69,7 +69,7 @@ onMounted(load)
         <div class="camera-stage">
           <video ref="video" muted playsinline />
           <div class="camera-guide" />
-          <div class="camera-tip">{{ cameraReady ? '请正对镜头，采集时缓慢左右转头' : '启用摄像头开始录入' }}</div>
+          <div class="camera-tip">{{ cameraReady ? '请正对镜头，保持静止并确保只有本人入镜' : '启用摄像头开始录入' }}</div>
         </div>
         <el-progress v-if="enrollmentId" :percentage="Math.min(100, templateCount * 20)" :stroke-width="8" class="capture-progress" />
         <div class="capture-actions">
@@ -79,7 +79,7 @@ onMounted(load)
             <el-button :disabled="templateCount < 3" :icon="CircleCheck" @click="submit">提交审批</el-button>
           </template>
         </div>
-        <ul class="capture-rules"><li>光线均匀，摘下口罩、帽子和深色眼镜</li><li>画面中只能出现一张人脸</li><li>保持正面，并缓慢向左、向右转头</li><li>提交后请与管理员约定现场复验</li></ul>
+        <ul class="capture-rules"><li>光线均匀，摘下口罩、帽子和深色眼镜</li><li>画面中只能出现一张人脸</li><li>保持正面静止，脸部位于取景框中央</li><li>提交后请与管理员约定现场复验</li></ul>
       </div>
     </section>
     <section class="panel">

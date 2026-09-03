@@ -39,7 +39,10 @@ export function errorMessage(error: unknown, fallback = '操作失败') {
     if (!error.response) return fallback
     const detail = error.response?.data?.detail
     if (typeof detail === 'string') return detail
-    if (detail?.message) return detail.message as string
+    if (detail?.message) {
+      const errors = Array.isArray(detail.errors) ? detail.errors.filter((item: unknown) => typeof item === 'string') : []
+      return errors.length ? `${detail.message}：${errors.join('；')}` : detail.message as string
+    }
     if (Array.isArray(detail) && detail.length > 0) {
       const fieldLabels: Record<string, string> = {
         username: '账号',

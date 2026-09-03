@@ -15,6 +15,7 @@ from app.core.config import settings
 from app.core.security import EmbeddingCipher, utcnow
 from app.db.session import get_db
 from app.models.entities import (
+    ChallengeType,
     EnrollmentMode,
     EnrollmentSession,
     EnrollmentStatus,
@@ -57,7 +58,13 @@ async def read_and_process_frames(files: list[UploadFile], engine: BaseFaceEngin
     frames: list[FaceFrame] = []
     messages: list[str] = []
     for index, upload in enumerate(files, start=1):
-        if upload.content_type not in {"image/jpeg", "image/png", "image/webp"}:
+        # Chromium/Electron can omit the Blob MIME type for canvas captures;
+        # the filename extension is a safe fallback for these browser-created
+        # image parts and still rejects arbitrary uploads.
+        content_type = (upload.content_type or "").lower()
+        suffix = (upload.filename or "").lower().rsplit(".", 1)[-1]
+        allowed_by_name = suffix in {"jpg", "jpeg", "png", "webp"}
+        if content_type not in {"image/jpeg", "image/png", "image/webp"} and not (content_type in {"", "application/octet-stream"} and allowed_by_name):
             messages.append(f"第 {index} 帧格式不支持")
             continue
         content = await upload.read(settings.max_upload_bytes + 1)
@@ -159,7 +166,9 @@ async def add_enrollment_frames(
     frames, messages = await read_and_process_frames(files, engine)
     if not frames:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail={"message": "没有可用的人脸帧", "errors": messages})
-    liveness = evaluate_liveness(frames, None)
+    # Enrollment uses static capture: quality, consistency and image decoding
+    # are checked without requiring a head turn.
+    liveness = evaluate_liveness(frames, ChallengeType.STATIC)
     if not liveness.passed:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, liveness.message)
 
@@ -293,7 +302,7 @@ async def live_verify_profile(
     if profile is None or profile.status != FaceProfileStatus.PENDING:
         raise HTTPException(status.HTTP_409_CONFLICT, "只有待审批档案可以现场复验")
     frames, _ = await read_and_process_frames(files, engine)
-    liveness = evaluate_liveness(frames, None)
+    liveness = evaluate_liveness(frames, ChallengeType.STATIC)
     if not liveness.passed:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, liveness.message)
     stored = []

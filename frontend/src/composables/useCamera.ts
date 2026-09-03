@@ -39,7 +39,22 @@ export function useCamera(video: Ref<HTMLVideoElement | null>) {
 
   async function captureFrame(): Promise<Blob> {
     const source = video.value
-    if (!source || !source.videoWidth) throw new Error('摄像头尚未准备好')
+    if (!source) throw new Error('摄像头尚未准备好')
+    const deadline = Date.now() + 2500
+    while ((!source.videoWidth || !source.videoHeight) && Date.now() < deadline) {
+      await new Promise((resolve) => window.setTimeout(resolve, 80))
+    }
+    if (!source.videoWidth || !source.videoHeight) throw new Error('摄像头画面尚未准备好，请稍候再试')
+    const videoWithFrameCallback = source as HTMLVideoElement & {
+      requestVideoFrameCallback?: (callback: () => void) => number
+    }
+    if (videoWithFrameCallback.requestVideoFrameCallback) {
+      await new Promise<void>((resolve) => {
+        videoWithFrameCallback.requestVideoFrameCallback?.(() => resolve())
+      })
+    } else {
+      await new Promise((resolve) => window.setTimeout(resolve, 80))
+    }
     const canvas = document.createElement('canvas')
     canvas.width = Math.min(source.videoWidth, 960)
     canvas.height = Math.round((canvas.width * source.videoHeight) / source.videoWidth)
