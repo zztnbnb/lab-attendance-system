@@ -29,7 +29,7 @@ onMounted(load)
 </script>
 
 <template>
-  <PageHeader title="时长统计" description="有效时长按 Asia/Shanghai 自然日切分；进行中和异常会话不进入正式累计。"><el-select v-model="days" style="width:130px" @change="load"><el-option label="近 14 天" :value="14" /><el-option label="近 30 天" :value="30" /><el-option label="近 60 天" :value="60" /><el-option label="近 90 天" :value="90" /></el-select><el-button :icon="Download" @click="exportCsv">导出 CSV</el-button></PageHeader>
+  <PageHeader title="时长统计" description="有效时长按武汉时间自然日切分；进行中和异常会话不进入正式累计。"><el-select v-model="days" style="width:130px" @change="load"><el-option label="近 14 天" :value="14" /><el-option label="近 30 天" :value="30" /><el-option label="近 60 天" :value="60" /><el-option label="近 90 天" :value="90" /></el-select><el-button :icon="Download" @click="exportCsv">导出 CSV</el-button></PageHeader>
   <div v-loading="loading">
     <div class="metric-grid"><MetricCard label="区间有效总时长" :value="formatDuration(totalDuration)" /><MetricCard label="日均有效时长" :value="formatDuration(average)" tone="blue" /><MetricCard label="当前在实验室" :value="`${stats?.current_count ?? 0} 人`" tone="purple" /><MetricCard label="异常记录" :value="`${stats?.exception_count ?? 0} 条`" tone="amber" /></div>
     <div class="content-grid"><section class="panel"><div class="panel__header"><h2>每日有效时长趋势</h2></div><div class="panel__body"><DurationChart :data="stats?.daily ?? []" kind="line" /></div></section><section class="panel"><div class="panel__header"><h2>签到时段分布</h2></div><div class="panel__body"><HourlyChart :data="stats?.hourly ?? []" /></div></section></div>

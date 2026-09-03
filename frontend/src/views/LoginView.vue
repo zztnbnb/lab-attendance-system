@@ -46,7 +46,7 @@ async function submit() {
           <div><b>03</b><span>可追溯的时长统计<br><small>跨日精准聚合</small></span></div>
         </div>
       </div>
-      <small class="login-story__foot">仅用于已授权的实验室成员 · Asia/Shanghai</small>
+      <small class="login-story__foot">仅用于已授权的实验室成员 · 武汉时间（UTC+8）</small>
     </section>
     <section class="login-form-wrap">
       <el-form class="login-form" size="large" @submit.prevent="submit">
